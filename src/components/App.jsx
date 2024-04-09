@@ -1,59 +1,68 @@
-import { lazy, useEffect } from 'react';
-import { Routes, Route } from 'react-router-dom';
-import { refreshThunk } from '../redux/operations-auth';
-import { useDispatch } from 'react-redux';
-import Layout from './Layout';
-import PrivateRoute from './utils/route-types/PrivateRoute';
-import PublicRoute from './utils/route-types/PublicRoute';
-import IndexPage from '../pages/IndexPage';
-import NotFoundPage from '../pages/NotFoundPage';
+import { NavLink, Outlet } from 'react-router-dom';
+import styled from 'styled-components';
+import { Suspense } from 'react';
+import Loader from 'components/Loader';
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.min.css';
+import Logout from './Logout';
+import { useSelector } from 'react-redux';
+import Cookie from './Cookie';
 
-const ContactsPage = lazy(() => import('../pages/ContactsPage'));
-const LoginPage = lazy(() => import('../pages/LoginPage'));
-const RegisterPage = lazy(() => import('../pages/RegisterPage'));
+const StyledLink = styled(NavLink)`
+    font-weight: bold;
+    font-size: 30px;
+    color: blue;
+    &.active {
+        color: orange;
+    }
+`;
 
-export default function App() {
-    const dispatch = useDispatch();
+const Nav = styled.div`
+    display: flex;
+    justify-content: space-evenly;
+    align-items: center;
+    box-shadow: 0px 0px 0px 1px black;
+    padding: 15px 0;
+    margin: 25px auto;
+    background: white;
+    max-width: 480px;
+    border-radius: 10px;
+`;
 
-    useEffect(() => {
-        dispatch(refreshThunk());
-    }, [dispatch]);
+const SpinnerWrapper = styled.div`
+    position: fixed;
+    top: 40%;
+    left: 50%;
+    transform: translate(-40%, -50%);
+`;
+
+const App = () => {
+    const token = useSelector(state => state.token);
 
     return (
-        <Routes>
-            <Route path="/" element={<Layout />}>
-                <Route index element={<IndexPage />} />
-
-                <Route
-                    path="/register"
-                    element={
-                        <PublicRoute
-                            redirectTo="/contacts"
-                            component={<RegisterPage />}
-                        />
-                    }
-                />
-                <Route
-                    path="/login"
-                    element={
-                        <PublicRoute
-                            redirectTo="/contacts"
-                            component={<LoginPage />}
-                        />
-                    }
-                />
-                <Route
-                    path="/contacts"
-                    element={
-                        <PrivateRoute
-                            redirectTo="/login"
-                            component={<ContactsPage />}
-                        />
-                    }
-                />
-
-                <Route path="*" element={<NotFoundPage />} />
-            </Route>
-        </Routes>
+        <>
+            <Nav>
+                <StyledLink to="/" end>
+                    Home
+                </StyledLink>
+                {!token && <StyledLink to="/register">Sign up </StyledLink>}
+                {!token && <StyledLink to="/login">Log in</StyledLink>}
+                {token && <StyledLink to="/contacts">Contacts</StyledLink>}
+                {token && <Logout />}
+            </Nav>
+            <Suspense
+                fallback={
+                    <SpinnerWrapper>
+                        <Loader />
+                    </SpinnerWrapper>
+                }
+            >
+                <Outlet />
+            </Suspense>
+            <Cookie />
+            <ToastContainer autoClose={3000} />
+        </>
     );
-}
+};
+
+export default App;
