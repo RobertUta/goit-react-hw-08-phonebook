@@ -1,68 +1,70 @@
-import { NavLink, Outlet } from 'react-router-dom';
-import styled from 'styled-components';
-import { Suspense } from 'react';
-import Loader from 'components/Loader';
-import { ToastContainer } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.min.css';
-import Logout from './Logout';
-import { useSelector } from 'react-redux';
-import Cookie from './Cookie';
+import { Routes, Route, Navigate } from 'react-router-dom';
+import { lazy } from 'react';
 
-const StyledLink = styled(NavLink)`
-    font-weight: bold;
-    font-size: 30px;
-    color: blue;
-    &.active {
-        color: orange;
-    }
-`;
+import Layout from 'components/Layout/Layout';
 
-const Nav = styled.div`
-    display: flex;
-    justify-content: space-evenly;
-    align-items: center;
-    box-shadow: 0px 0px 0px 1px black;
-    padding: 15px 0;
-    margin: 25px auto;
-    background: white;
-    max-width: 480px;
-    border-radius: 10px;
-`;
+import { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { fetchCurrentUser } from './redux/auth/AuthOperation';
 
-const SpinnerWrapper = styled.div`
-    position: fixed;
-    top: 40%;
-    left: 50%;
-    transform: translate(-40%, -50%);
-`;
+import PrivateRoute from './PrivateRoute';
 
-const App = () => {
-    const token = useSelector(state => state.token);
+import useAuth from './hooks/UseAuth';
+import { Box, Container } from '@chakra-ui/react';
+import PublicRoute from './PublicRoute';
 
-    return (
-        <>
-            <Nav>
-                <StyledLink to="/" end>
-                    Home
-                </StyledLink>
-                {!token && <StyledLink to="/register">Sign up </StyledLink>}
-                {!token && <StyledLink to="/login">Log in</StyledLink>}
-                {token && <StyledLink to="/contacts">Contacts</StyledLink>}
-                {token && <Logout />}
-            </Nav>
-            <Suspense
-                fallback={
-                    <SpinnerWrapper>
-                        <Loader />
-                    </SpinnerWrapper>
+const RegistrationForm = lazy(() => import('./pages/Registration'));
+const Contacts = lazy(() => import('./pages/Contacts'));
+const Login = lazy(() => import('./pages/Login'));
+
+function App() {
+  const dispatch = useDispatch();
+  useEffect(() => {
+    dispatch(fetchCurrentUser());
+  }, [dispatch]);
+
+  const { isRefreshing } = useAuth();
+
+  return (
+    !isRefreshing && (
+      <Container maxW='1200px' centerContent>
+        <Box padding='4' width="100%">
+          <Routes>
+            <Route path="/" element={<Layout />}>
+              <Route index element={<Navigate to='/contacts' replace />} />
+
+              <Route
+                path="/register"
+                element={
+                  <PublicRoute
+                    component={<RegistrationForm />}
+                    redirectTo="/contacts"
+                  />
                 }
-            >
-                <Outlet />
-            </Suspense>
-            <Cookie />
-            <ToastContainer autoClose={3000} />
-        </>
-    );
-};
+              />
+
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute component={<Login />} redirectTo="/contacts" />
+                }
+              />
+
+              <Route
+                path="/contacts"
+                element={
+                  <PrivateRoute component={<Contacts />} redirectTo="/login" />
+                }
+              />
+
+              <Route path="*" element={<Contacts />} />
+            </Route>
+          </Routes>
+        </Box>
+
+      </Container >
+    )
+  );
+}
 
 export default App;

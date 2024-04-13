@@ -1,10 +1,11 @@
-import { Outlet, Navigate } from 'react-router-dom';
-import { useSelector } from 'react-redux';
+import useAuth from './hooks/UseAuth';
+import { Navigate } from 'react-router-dom';
 
-const PublicRoute = () => {
-  const token = useSelector(state => state.token);
+export default function PublicRoute({
+    component: Component,
+    redirectTo = '/',
+}) {
+    const { isLoggedIn } = useAuth();
 
-  return token ? <Navigate to="/contacts" /> : <Outlet />;
-};
-
-export default PublicRoute;
+    return isLoggedIn ? <Navigate to={redirectTo} /> : Component;
+}
